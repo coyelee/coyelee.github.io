@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2019-11-06T09:25:31.047Z</updated>
+  <updated>2019-12-19T08:50:15.528Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -15,6 +15,32 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>thread-safe</title>
+    <link href="http://yoursite.com/2019/12/19/thread-safe/"/>
+    <id>http://yoursite.com/2019/12/19/thread-safe/</id>
+    <published>2019-12-19T08:36:07.000Z</published>
+    <updated>2019-12-19T08:50:15.528Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="线程安全一个小case"><a href="#线程安全一个小case" class="headerlink" title="线程安全一个小case"></a>线程安全一个小case</h3><blockquote><p>代码示例</p></blockquote><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">- (void)moreThreadSafe &#123;</span><br><span class="line">    pthread_mutex_init(&amp;_mutex, NULL);</span><br><span class="line">    self.threadStr = @&quot;thread safe after&quot;;</span><br><span class="line">    [self performSelector:@selector(doSomething) withObject:nil afterDelay:0.5];</span><br><span class="line"></span><br><span class="line">    /*</span><br><span class="line">     * 示例代码一</span><br><span class="line">    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^&#123;</span><br><span class="line">        NSLog(@&quot;before sleep %@&quot;,self.threadStr);</span><br><span class="line">        sleep(3);</span><br><span class="line">        NSLog(@&quot;after sleep %@&quot;,self.threadStr);</span><br><span class="line">    &#125;);*/</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">     // 示例代码二</span><br><span class="line">     __weak typeof(self.threadStr)weakString = self.threadStr;</span><br><span class="line">    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^&#123;</span><br><span class="line">        __strong __typeof(weakString) strongString = weakString;</span><br><span class="line">        NSLog(@&quot;before sleep %@&quot;,strongString);</span><br><span class="line">        sleep(3);</span><br><span class="line">        NSLog(@&quot;after sleep %@&quot;,strongString);</span><br><span class="line">    &#125;);</span><br><span class="line">    </span><br><span class="line">    /*</span><br><span class="line">     * 示例代码三</span><br><span class="line">    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^&#123;</span><br><span class="line">        pthread_mutex_lock(&amp;self-&gt;_mutex);</span><br><span class="line">        NSLog(@&quot;before sleep %@&quot;,self.threadStr);</span><br><span class="line">        sleep(3);</span><br><span class="line">        NSLog(@&quot;after sleep %@&quot;,self.threadStr);</span><br><span class="line">        pthread_mutex_unlock(&amp;self-&gt;_mutex);</span><br><span class="line">    &#125;);*/</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (void)doSomething &#123;</span><br><span class="line">    pthread_mutex_lock(&amp;_mutex);</span><br><span class="line">    self.threadStr = @&quot;thread safe  changed&quot;;</span><br><span class="line">    pthread_mutex_unlock(&amp;_mutex);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><blockquote><p>说明</p></blockquote><p>为了保证异步子线程对资源（例如示例代码中的 self.threadStr ）的独占，防止资源竞争，需要保证子线程的不被改变，因此类似示例一代码的写法，就不能保证这个问题，示例二代码通过改变数据储存指针的方式保证了不被更改，同时也保证了野指针的问题，示例三通过加锁的方式也保证了这种问题的出现，但加入此资源使用地方较多，不建议这种方式。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h3 id=&quot;线程安全一个小case&quot;&gt;&lt;a href=&quot;#线程安全一个小case&quot; class=&quot;headerlink&quot; title=&quot;线程安全一个小case&quot;&gt;&lt;/a&gt;线程安全一个小case&lt;/h3&gt;&lt;blockquote&gt;
+&lt;p&gt;代码示例&lt;/p&gt;
+&lt;/blockquote
+      
+    
+    </summary>
+    
+    
+      <category term="iOS" scheme="http://yoursite.com/categories/iOS/"/>
+    
+    
+  </entry>
   
   <entry>
     <title>Git常用命令</title>
