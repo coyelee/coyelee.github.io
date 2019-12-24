@@ -187,6 +187,274 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/23/iOS-crash/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar_myself.jpeg">
+      <meta itemprop="name" content="coyeli">
+      <meta itemprop="description" content="一名移动端开发者，但不限于移动端端技术(学无止境...)">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="记录过程">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/12/23/iOS-crash/" class="post-title-link" itemprop="url">iOS-crash</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-23 10:54:33" itemprop="dateCreated datePublished" datetime="2019-12-23T10:54:33+08:00">2019-12-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-12-24 14:59:16" itemprop="dateModified" datetime="2019-12-24T14:59:16+08:00">2019-12-24</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <!-----
+title: iOS-crash
+date: 2019-12-23 10:54:33
+categories:
+- iOS
+tags:
+- crash
+----->
+<h2 id="iOS-Crash-总结"><a href="#iOS-Crash-总结" class="headerlink" title="iOS Crash 总结"></a>iOS Crash 总结</h2><h3 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h3><ul>
+<li>符号化：就是把内存地址用可读的函数名与行数来替换</li>
+</ul>
+<h4 id="符号化-crash-report"><a href="#符号化-crash-report" class="headerlink" title="符号化 crash report"></a>符号化 crash report</h4><pre><code>符号化是指把堆栈信息（二进制信息）解释成源码里的方法名或者函数名，也就是所谓符号
+</code></pre><ul>
+<li><p>编译器源代码 -&gt; 机器码，会生成一份对应的 debug 符号表（映射表）</p>
+</li>
+<li><p>映射表把编译好的二进制信息中隐藏的机器指令映射到每一行源码中</p>
+</li>
+<li><p>符号表可储存在 binary信息中，也可储存在 debug symbol文件（DSYM文件）</p>
+</li>
+<li><p>build setting -&gt; debug information format 可以设置是否生成dsym debug符号表</p>
+</li>
+<li><p>debug 下 符号表一般储存在二进制信息中，release 下储存在单独的 dsym 文件中，以节省包体积</p>
+</li>
+<li><p>同一次构建， app + DSYM + UUID配套存在，三者的 uuid 不同，无法进行符号化</p>
+</li>
+</ul>
+<h4 id="bitcode"><a href="#bitcode" class="headerlink" title="bitcode"></a>bitcode</h4><ul>
+<li><p>bitcode 开启后，编译器生成的二进制中包含的是 bitcode 中间码，而不是机器码，上传 appstore 后才会被编译成机器码</p>
+</li>
+<li><p>开启 bitcode 后的  DSYM 获取在  ITC网站上</p>
+</li>
+<li><p>开启 bitcode 后，假如上传 app 到 appstore 没有勾选 “上传你的app的符号表信息以便从 apple 那边接收符号化过的 report” 选项， xcode会用一种符号替换app的 dsym文件，然后将其储存在 app 文件的 bcsymbolmap文件</p>
+</li>
+<li><p>符号化之前， xcode中的下载 dsym，解析会自动完成，否则要使用如下命令<br><code>xcrun dsymutil -symbol-map ~/Library/Developer/Xcode/Archives/xxx/xxx/xx.xcarchive/BCSymbolMaps ~/Downloads/dSYMs/xxx.dSYM</code></p>
+</li>
+</ul>
+<h4 id="xcode-符号化-crash-report-条件"><a href="#xcode-符号化-crash-report-条件" class="headerlink" title="xcode 符号化 crash report 条件"></a>xcode 符号化 crash report 条件</h4><ul>
+<li><p>闪退 app 的二进制信息以及 DSYM 文件</p>
+</li>
+<li><p>app 关联的自定义 framework 的二进制信息以及 DSYM文件</p>
+</li>
+<li><p>发生 crash 的时候 app 所依赖的<strong>系统</strong>的符号表信息（发生crash时候的手机等系统版本）</p>
+</li>
+</ul>
+<h4 id="auto-符号化-crash-report"><a href="#auto-符号化-crash-report" class="headerlink" title="auto 符号化 crash report"></a>auto 符号化 crash report</h4><pre><code>auto 命令可以把地址里的数字替换成等价的符号，输出包含文件名和对应的资源行数。 auto 也可以单独符号化 crash report。
+</code></pre><ul>
+<li><p>对应 DSYM文件</p>
+</li>
+<li><p>二进制名称</p>
+</li>
+<li><p>二进制 加载地址</p>
+</li>
+<li><p>要解析的内存地址</p>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">atos -arch &lt;Binary Architecture&gt; -o &lt;Path to dSYM file&gt;/Contents/Resources/DWARF/&lt;binary image name&gt; -l &lt;load address&gt; &lt;address to symbolicate&gt;</span><br><span class="line"></span><br><span class="line">$ atos -arch arm64 -o xxxx.app.dSYM/Contents/Resources/DWARF/xxxx -l 0xxxxxxxxxxx 0xxxxxxxxxxxxx</span><br></pre></td></tr></table></figure>
+<h4 id="分析crash-report"><a href="#分析crash-report" class="headerlink" title="分析crash report"></a>分析crash report</h4><h5 id="header"><a href="#header" class="headerlink" title="header"></a>header</h5><p><img src="../images/crash_header.png" alt="crash header" title="header"></p>
+<ul>
+<li><p>Incident Identifier：一个crash report的唯一ID。两个 report不会使用同一个Incident Identifier</p>
+</li>
+<li><p>CrashReporter Key：一个匿名的设备相关ID，同一个设备的两篇crash report会有相同的CrashReporter Key</p>
+</li>
+<li><p>Process：发生Crash时的进程名。这个和app信息属性列表里的CFBundleExecutable Key中的值可以匹配上</p>
+</li>
+<li><p>Code Type：crash 架构  arm64 arm7等</p>
+</li>
+<li><p>Role：在发生crash时进程的的task_role</p>
+</li>
+</ul>
+<h4 id="异常信息"><a href="#异常信息" class="headerlink" title="异常信息"></a>异常信息</h4><pre><code>列举 Mach 异常类型和相应的能提供对解crash有关的一些信息
+</code></pre><p><img src="../images/crash_exception.png" alt="crash type" title="type"></p>
+<ul>
+<li><p>Exception Codes：和异常是有关的处理器指定信息，这些信息会被编码成一个或者多个64位二进制数字</p>
+</li>
+<li><p>Exception Subtype：可读的exception code的名称</p>
+</li>
+<li><p>Exception Message：从exception code中解析出来的附加的可读信息</p>
+</li>
+<li><p>Exception Note：不特指某一种异常的额外信息。如果这个字段包含”SIMULATED”(不是Crash)，则进程并没有发生crash，而是在系统层面被kill掉了，比如看门狗机制，机制触发如下:</p>
+</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>触发时机</th>
+<th>看门狗出动实践</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>启动</td>
+<td>20s</td>
+</tr>
+<tr>
+<td>恢复运行</td>
+<td>10s</td>
+</tr>
+<tr>
+<td>悬挂进程</td>
+<td>10s</td>
+</tr>
+<tr>
+<td>退出应用</td>
+<td>6s</td>
+</tr>
+<tr>
+<td>后台运行</td>
+<td>10min</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>Termination Reason：当进程被终止时的原因及信息</li>
+<li>Triggered by Thread： 异常发生的线程</li>
+</ul>
+<h4 id="常见异常类型"><a href="#常见异常类型" class="headerlink" title="常见异常类型"></a>常见异常类型</h4><ul>
+<li><p>Bad Memory Access [EXC_BAD_ACCESS // SIGSEGV // SIGBUS]</p>
+<ul>
+<li><p>进程试图去访问无效的内存空间，或者尝试访问的方法是不被允许的（例如给只读的内存空间做写操作）。在Exception Subtype字段中如果出现kern_return_t的话，说明内存地址空间被不正确的访问了。</p>
+</li>
+<li><p>如果 objc_msgSend 或者 objc_release出现在crash的线程的附近，则进程有可能尝试去给一个被释放的对象发送消息</p>
+</li>
+<li><p>如果gpus_ReturnNotPermittedKillClient在近crash的线程附近，则进程有可能是尝试在后台通过OpenGL ES或者Metal来做渲染。</p>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>Abnormal Exit [EXC_CRASH // SIGABRT]</p>
+<ul>
+<li>进程异常退出。这种异常最常见的原因在于uncaught Objective-C/C++ exception并且调用了abort()。</li>
+</ul>
+</li>
+<li><p>Trace Trap [EXC_BREAKPOINT // SIGTRAP]</p>
+<ul>
+<li>由于在特殊的节点加入debugger调试节点的原因</li>
+</ul>
+</li>
+<li><p>Illegal Instruction [EXC_BAD_INSTRUCTION // SIGILL]</p>
+<ul>
+<li>当尝试去执行一个非法或者未定义的指令时会触发该异常。有可能是因为线程在一个配置错误的函数指针的误导下尝试jump到一个无效地址</li>
+</ul>
+</li>
+<li><p>Quit [SIGQUIT]</p>
+<ul>
+<li>这个异常是由于其它进程拥有高优先级且可以管理本进程（因此被高优先级进程Kill掉）所导致。SIGQUIT不代表进程发生Crash了，但是它确实反映了某种不合理的行为     </li>
+</ul>
+</li>
+<li><p>Killed[SIGKILL]</p>
+<ul>
+<li>进程收到系统指令被干掉</li>
+</ul>
+</li>
+<li><p>Guarded Resource Violation [EXC_GUARD]</p>
+<ul>
+<li>进程违规访问了一个被保护的资源</li>
+</ul>
+</li>
+<li><p>Resource Limit [EXC_RESOURCE]</p>
+<ul>
+<li>进程的资源超过限定阈值。这条推送是OS发出的，表示进程占有了太多的资源。准确的资源列在了Exception Subtype的字段里。如果Exception Note字段包含了NON-FATAL CONDITION（非严重错误），则即便是生成了crash report，进程也不会被kill掉。</li>
+<li>如果EXCEPTION SUBTYPE里出现MEMORY则暗示了进程占用已经超过系统限制。如果之后出现由于系统占用过多进程被Kill，可能和这有关</li>
+<li>如果EXCEPTION SUBTYPE里出现WAKEUP则暗示线程每秒被进程唤醒太多次了，进而导致CPU被频繁唤醒并且造成电量损耗</li>
+</ul>
+</li>
+<li><p>Other Exception Types：看 Exception Code</p>
+<ul>
+<li>0xbaaaaaad：则说明此条logs是系统堆栈快照，并非crash report</li>
+<li>0xbad22222：表示一个VoIP应用因为频繁暂停被iOS系统终止掉</li>
+<li>0xc00010ff：则说明app因为环境过热（的事件）被iOS系统干掉了</li>
+<li>0xdead10cc：(读起来像deadlock)则说明一个应用被系统终止掉，原因是在应用挂起时拿到了文件锁或者sqlite数据库所长期不释放直到被冻结</li>
+<li>0x2bad45ec：说明app因为违规操作（安全违规）被iOS系统终止</li>
+</ul>
+</li>
+</ul>
+<h4 id="堆栈信息"><a href="#堆栈信息" class="headerlink" title="堆栈信息"></a>堆栈信息</h4><pre><code>最重要的一部分信息
+</code></pre><p><img src="../images/crash_body.png" alt="crash body" title="body"></p>
+<ul>
+<li><p>给之前已经释放的对象发送消息会引发NSInvalidArgumentException异常进而crash，而非内存访问违规</p>
+</li>
+<li><p>如果异常没有被捕捉到，他会被一个叫uncaught exception方法所拦截，这种叫异常堆栈</p>
+</li>
+<li><p>如果你发现本应该被捕捉的异常并没有被捕捉到，请确定您没有在building应用或者library时添加了-no_compact_unwind标签</p>
+</li>
+</ul>
+<h4 id="Binary-Images"><a href="#Binary-Images" class="headerlink" title="Binary Images"></a>Binary Images</h4><pre><code>其中包含以下重要信息
+</code></pre><p><img src="../images/crash_images.png" alt="crash images" title="images"></p>
+<ul>
+<li><p>在进程内的二进制文件的地址空间</p>
+</li>
+<li><p>二进制文件的架构名</p>
+</li>
+<li><p>一个可以唯一标示二进制文件的id，即UUID</p>
+</li>
+<li><p>磁盘上二进制文件的path</p>
+</li>
+</ul>
+<h3 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h3><p>  补充准备中…</p>
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><ul>
+<li><a href="https://wetest.qq.com/lab/view/404.html?" target="_blank" rel="noopener">了解和分析iOS Crash</a></li>
+<li><a href="https://www.codenong.com/js55c4d666adf7/" target="_blank" rel="noopener">iOS Crash日志字段解析</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/19/thread-safe/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -915,7 +1183,7 @@ Port 443
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-count">5</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
